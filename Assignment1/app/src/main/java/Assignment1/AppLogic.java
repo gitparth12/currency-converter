@@ -25,36 +25,51 @@ public class AppLogic{
     public static void selectUserOption(String userType, Scanner scan) {
         if (userType.equals("1")) {
             // run code for user
-            String input = UserInterface.getString(Arrays.asList("1", "2", "3"), "User, what would you like to do?\n1: Convert currencies\n2: Display currency table\n3: Summary of 2 currencies", scan);
+            String input = UserInterface.getString(Arrays.asList("1", "2", "3", "4"), "User, what would you like to do?\n1: Convert currencies\n" +
+                    "2: Display currency table\n3: Summary of 2 currencies\n4: Exit the program", scan);
 
             switch (input) {
                 case "1":
-                    convertCurrencies();
+                    convertCurrencies(scan);
                     break;
                 case "2":
                     AppLogic.displayCurrencyTable();
                     break;
                 case "3":
-                    AppLogic.summaryOf2Currencies();
+                    AppLogic.summaryOf2Currencies(scan);
                     break;
+                case "4":
+                    System.out.println("Thank you for using our Currency Converter, have a good day :)");
+                    System.exit(0);
             }
         } else if (userType.equals("2")) {
             // run code for admin
-            String input = UserInterface.getString(Arrays.asList("1", "2", "3", "4"), "Administrator, what would you like to do?\n1: Convert currencies\n2: Display currency table\n" +
-                    "3: Summary of 2 currencies\n4: ", scan);
+            String input = UserInterface.getString(Arrays.asList("1", "2", "3", "4", "5", "6"), "Administrator, what would you like to do?\n" +
+                    "1: Convert currencies\n2: Display currency table\n3: Summary of 2 currencies\n4: Add new currency\n" +
+                    "5: Add new exchange rate for existing currency\n6: Exit the program", scan);
 
             switch (input) {
                 case "1":
-                    convertCurrencies();
+                    convertCurrencies(scan);
                     break;
                 case "2":
                     UserInterface.adminDisplayTable(scan, popCurrencies, currencies);
                     break;
                 case "3":
-                    AppLogic.summaryOf2Currencies();
+                    AppLogic.summaryOf2Currencies(scan);
                     break;
+                case "4":
+                    addNewCurrency(scan);
+                    break;
+                case "5":
+                    addExchangeRate(scan);
+                    break;
+                case "6":
+                    System.out.println("Thank you for using our Currency Converter, have a good day :)");
+                    System.exit(0);
             }
         }
+        // selectUserOption(userType, scan);
     }
 
     // Repeatable method, always run at beginning of program, which reads into the currency folder
@@ -85,7 +100,7 @@ public class AppLogic{
             System.out.println("File not found exception.");
         }
     }
-    public static void convertCurrencies() {
+    public static void convertCurrencies(Scanner scan) {
         System.out.println("Please input the amount.");
         double amount = Double.parseDouble(scan.nextLine());
         String currency1 = UserInterface.getString(getAllCurrencies(), "Please choose the current currency symbol.", scan);
@@ -217,9 +232,9 @@ public class AppLogic{
     }
 
     // Displays the summary 2 currencies chosen by input
-    public static void summaryOf2Currencies() {
+    public static void summaryOf2Currencies(Scanner scan) {
         System.out.println("Please choose 2 currencies so we can compare them against each other.");
-        System.out.println("Here is a list of all the saved currencies.");
+        System.out.println("Here is a list of saved currencies.");
         List<String> acceptableCurrencies = new ArrayList<String>();
         List<String> acceptableDates = new ArrayList<String>();
         // Saving the acceptable currencies and dates for the user to input
@@ -236,10 +251,13 @@ public class AppLogic{
                 }
             }
         }
-        // Asking input from the user for the currencies and dates
+        // Asking the user for the currencies (and indexing them) and dates
         String firstCurrency = UserInterface.getString(acceptableCurrencies, "Please input the first currency in the 3-lettered format as shown above.", scan);
+        int firstCurrencyIndex = acceptableCurrencies.indexOf(firstCurrency);
         acceptableCurrencies.remove(String.valueOf(firstCurrency));
         String secondCurrency = UserInterface.getString(acceptableCurrencies, "Please input the second currency.", scan);
+        acceptableCurrencies.add(firstCurrencyIndex, firstCurrency);
+        int secondCurrencyIndex = acceptableCurrencies.indexOf(secondCurrency);
         System.out.println("Here is a list of saved dates for each currency's conversation rates.");
         for (String date : acceptableDates) {
             System.out.println(date);
@@ -249,71 +267,131 @@ public class AppLogic{
             acceptableDates.remove(0);
         }
         String endDate = UserInterface.getString(acceptableDates, "Please input the end date.", scan);
-        System.out.println("Here is a summary of the 2 currencies.\n");
-        // Indexing the currencies for them to be accessed in the 'currencies' list
-        int firstCurrencyIndex = 0;
-        int secondCurrencyIndex = 0;
-        for (int i = 0; i < acceptableCurrencies.size(); i++) {
-            if (acceptableCurrencies.get(i).equals(firstCurrency)) {
-                firstCurrencyIndex = i;
-            }
-            if (acceptableCurrencies.get(i).equals(secondCurrency)) {
-                secondCurrencyIndex = i;
-            }
-        }
-        // Reading and displaying the summary for the currencies
+        // Saving the dates and intial rates of the specified currencies
         LinkedHashMap<String, Double> currency;
+        ArrayList<String> specifiedDates = new ArrayList<String>();
         ArrayList<Double> firstRates = new ArrayList<Double>();
         ArrayList<Double> secondRates = new ArrayList<Double>();
-        boolean printDates = false;
+        boolean selectDates = false;
         for (int i = 0; i < currencies.size(); i++) {
-            if (i == firstCurrencyIndex) {
-                System.out.println(firstCurrency + " Conversion Rates");
+            if ((i == firstCurrencyIndex) || (i == secondCurrencyIndex)) {
                 currency = currencies.get(i);
-                printDates = false;
+                selectDates = false;
                 for (String date : currency.keySet()) {
                     if (date.equals(startDate)) {
-                        printDates = true;
+                        selectDates = true;
                     }
                     else if (date.equals(endDate)) {
-                        printDates = false;
-                        System.out.println(date + ": " + currency.get(date).toString());
+                        selectDates = false;
+                        specifiedDates.add(date);
+                        if (i == firstCurrencyIndex) {
+                            firstRates.add(currency.get(date));
+                        }
+                        else if (i == secondCurrencyIndex) {
+                            secondRates.add(currency.get(date));
+                        }
+                        break;
                     }
-                    if (printDates) {
-                        System.out.println(date + ": " + currency.get(date).toString());
-                        firstRates.add(currency.get(date));
-                    }
-                }
-                System.out.println("\nAverage: " + Operations.getAverage(firstRates) +
-                                   "\nMedian: " + Operations.getMedian(firstRates) +
-                                   "\nMaximum: " + Operations.getMaximum(firstRates) +
-                                   "\nMinimum: " + Operations.getMinimum(firstRates) +
-                                   "\nStandard Deviation: " + Operations.getSD(firstRates) + "\n");
-            }
-            if (i == secondCurrencyIndex) {
-                System.out.println(secondCurrency + " Conversion Rates");
-                currency = currencies.get(i);
-                printDates = false;
-                for (String date : currency.keySet()) {
-                    if (date.equals(startDate)) {
-                        printDates = true;
-                    }
-                    else if (date.equals(endDate)) {
-                        printDates = false;
-                        System.out.println(date + ": " + currency.get(date).toString());
-                    }
-                    if (printDates) {
-                        System.out.println(date + ": " + currency.get(date).toString());
-                        secondRates.add(currency.get(date));
+                    if (selectDates) {
+                        specifiedDates.add(date);
+                        if (i == firstCurrencyIndex) {
+                            firstRates.add(currency.get(date));
+                        }
+                        else if (i == secondCurrencyIndex) {
+                            secondRates.add(currency.get(date));
+                        }
                     }
                 }
-                System.out.println("\nAverage: " + Operations.getAverage(secondRates) +
-                                   "\nMedian: " + Operations.getMedian(secondRates) +
-                                   "\nMaximum: " + Operations.getMaximum(secondRates) +
-                                   "\nMinimum: " + Operations.getMinimum(secondRates) +
-                                   "\nStandard Deviation: " + Operations.getSD(secondRates));
             }
         }
+        // Displaying the summary for the currencies (conversion to one another)
+        ArrayList<Double> firstToSecondRates = new ArrayList<Double>();
+        ArrayList<Double> secondToFirstRates = new ArrayList<Double>();
+        System.out.println("Here is a summary of the 2 currencies.\n");
+        System.out.println(firstCurrency + " to " + secondCurrency + " Conversion Rates\n");
+        for (int i = 0; i < firstRates.size(); i++) {
+            firstToSecondRates.add(calcExchangeRate(firstRates.get(i), secondRates.get(i)));
+            secondToFirstRates.add(calcExchangeRate(secondRates.get(i), firstRates.get(i)));
+            System.out.printf(specifiedDates.get(i) + ": %g\n", firstToSecondRates.get(i));
+        }
+        System.out.printf("\nAverage: %g", Operations.getAverage(firstToSecondRates));
+        System.out.printf("\nMedian: %g", Operations.getMedian(firstToSecondRates));
+        System.out.printf("\nMaximum: %g", Operations.getMaximum(firstToSecondRates));
+        System.out.printf("\nMinimum: %g", Operations.getMinimum(firstToSecondRates));
+        System.out.printf("\nStandard Deviation: %g\n\n", Operations.getSD(firstToSecondRates));
+        System.out.println(secondCurrency + " to " + firstCurrency + " Conversion Rates\n");
+        for (int i = 0; i < secondToFirstRates.size(); i++) {
+            System.out.printf(specifiedDates.get(i) + ": %g\n", secondToFirstRates.get(i));
+        }
+        System.out.printf("\nAverage: %g", Operations.getAverage(secondToFirstRates));
+        System.out.printf("\nMedian: %g", Operations.getMedian(secondToFirstRates));
+        System.out.printf("\nMaximum: %g", Operations.getMaximum(secondToFirstRates));
+        System.out.printf("\nMinimum: %g", Operations.getMinimum(secondToFirstRates));
+        System.out.printf("\nStandard Deviation: %g\n\n", Operations.getSD(secondToFirstRates));
+    }
+
+    // Creates a new currency file if there isn't one already
+    public static void addNewCurrency(Scanner scan) {
+        System.out.println("Please input name of the currency you want to add.");
+        String name = scan.nextLine();
+        if(!getAllCurrencies().contains(name)) {
+            File newFile = new File("./src/main/java/Assignment1/currencies/" + name + ".csv");
+            File currencyFile = new File("./src/main/java/Assignment1/currencies/currencyFiles.txt");
+
+            try {
+                // Creating the new file for the currency
+                FileWriter fr1 = new FileWriter(newFile, false);
+                fr1.write(name + ", 0.0");
+                // Adding the filepath to currencyFile
+                FileWriter fr2 = new FileWriter(currencyFile, true);
+                fr2.write(System.lineSeparator() + "./src/main/java/Assignment1/currencies/" + name + ".csv");
+
+                System.out.println(name + " was successfully added to the system.\n");
+                fr1.close();
+                fr2.close();
+            } catch (IOException e) {
+                System.out.println("An error occurred.");
+            }
+        }
+        else
+            System.out.println("Error: that currency already exists in the system.");
+    }
+
+    public static void addExchangeRate(Scanner scan) {
+        System.out.println("Please input currency name.");
+        String name = scan.nextLine();
+        if(getAllCurrencies().contains(name)) {
+            System.out.println("Please input date in DD/MM/YY format.");
+            String date = scan.nextLine();
+            System.out.println("Please input the exchange rate in USD, rounded off to 5 decimal places.");
+            String rate = scan.nextLine();
+            try {
+                Scanner currencyFiles = new Scanner(new File("./src/main/java/Assignment1/currencies/currencyFiles.txt"));
+                while(currencyFiles.hasNextLine()) {
+                    String line = currencyFiles.nextLine();
+                    if(line.contains(name)) {
+                        try {
+                            FileWriter fr = new FileWriter(line, true);
+                            fr.write(System.lineSeparator() + date + ", " + rate);
+                            System.out.println("The new exchange rate for " + name + " was successfully added.\n");
+                            fr.close();
+                        } catch (IOException e) {
+                            System.out.println("An error occurred.");
+                        } finally {
+                            for(LinkedHashMap<String, Double> currency: currencies) {
+                                if(currency.keySet().contains(name))
+                                    currency.put(date, Double.parseDouble(rate));
+                            }
+                        }
+                    }
+                }
+                currencyFiles.close();
+            } catch (IOException e) {
+                System.out.println("An error occurred.");
+            }
+        }
+        else
+            System.out.println("Currency does not exist.");
     }
 
     // Returns the Names of all our currencies
